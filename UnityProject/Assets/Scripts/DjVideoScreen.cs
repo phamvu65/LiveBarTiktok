@@ -69,7 +69,7 @@ namespace TikTokLiveGame
             };
             videoTexture.Create();
 
-            Shader shader = Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
+            Shader shader = Resources.Load<Shader>("Shaders/ClubBackdrop");
             screenMaterial = new Material(shader) { mainTexture = videoTexture };
             GetComponent<Renderer>().material = screenMaterial;
 
@@ -118,7 +118,7 @@ namespace TikTokLiveGame
 
             if (screenMaterial == null)
             {
-                Shader shader = Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
+                Shader shader = Resources.Load<Shader>("Shaders/ClubBackdrop");
                 screenMaterial = new Material(shader);
                 GetComponent<Renderer>().material = screenMaterial;
             }
@@ -174,6 +174,7 @@ namespace TikTokLiveGame
             string[] folders =
             {
                 Path.Combine(buildRoot, "DJ_VIDEO"),
+                Path.Combine(projectRoot, "DJ_VIDEO"),
                 Path.Combine(workspaceRoot, "DJ_VIDEO"),
                 Application.streamingAssetsPath
             };
@@ -188,7 +189,7 @@ namespace TikTokLiveGame
             return null;
         }
 
-        private static string[] FindImagePaths()
+        internal static string[] FindImagePaths()
         {
             string buildRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             string projectRoot = Directory.GetParent(buildRoot)?.FullName ?? buildRoot;
@@ -196,6 +197,7 @@ namespace TikTokLiveGame
             string[] folders =
             {
                 Path.Combine(buildRoot, "DJ_VIDEO"),
+                Path.Combine(projectRoot, "DJ_VIDEO"),
                 Path.Combine(workspaceRoot, "DJ_VIDEO"),
                 Application.streamingAssetsPath
             };

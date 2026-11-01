@@ -254,7 +254,7 @@ namespace TikTokLiveGame
                 float x = (column - (CrowdColumns - 1) * 0.5f) * xSpacing + stagger;
                 float z = frontEdge - row * zSpacing;
                 float depthRatio = row / (float)(CrowdRows - 1);
-                float perspectiveScale = scale * Mathf.Lerp(1.06f, 0.86f, depthRatio);
+                float perspectiveScale = scale * 1.18f * Mathf.Lerp(1.06f, 0.86f, depthRatio);
                 actor.SetCrowdSlot(new Vector3(x, 0f, z), perspectiveScale);
             }
         }

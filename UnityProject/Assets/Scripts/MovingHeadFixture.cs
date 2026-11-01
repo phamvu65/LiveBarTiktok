@@ -26,6 +26,14 @@ namespace TikTokLiveGame
         private LineRenderer beam;
         private float baseStartWidth;
         private float baseEndWidth;
+        private Vector3 coverageCenter;
+        private Vector2 coverageSize = new(6.5f, 4.85f);
+
+        public void SetCoverage(Vector3 center, Vector2 sweepSize)
+        {
+            coverageCenter = center;
+            coverageSize = sweepSize;
+        }
 
         public void Initialize(Vector3 fixtureOrigin, Color color, float fixturePhase, MovingHeadStyle fixtureStyle, bool castsLight)
         {
@@ -40,9 +48,9 @@ namespace TikTokLiveGame
 
             spot = gameObject.AddComponent<Light>();
             spot.type = LightType.Spot;
-            spot.range = wash ? 19f : 24f;
-            spot.spotAngle = wash ? 24f : beamStyle ? 7f : gobo ? 17f : 13f;
-            spot.innerSpotAngle = spot.spotAngle * 0.62f;
+            spot.range = wash ? 25f : 28f;
+            spot.spotAngle = wash ? 52f : beamStyle ? 12f : gobo ? 28f : 32f;
+            spot.innerSpotAngle = spot.spotAngle * 0.72f;
             spot.intensity = wash ? 0.85f : beamStyle ? 3.4f : gobo ? 2.8f : 2.5f;
             spot.color = color;
             spot.cullingMask = -1; // Chiếu sáng mọi layer, bao gồm cả backdrop 2D
@@ -54,13 +62,12 @@ namespace TikTokLiveGame
             beam.useWorldSpace = true;
             beam.positionCount = 2;
             beam.numCapVertices = 4;
-            baseStartWidth = wash ? 0.28f : beamStyle ? 0.035f : gobo ? 0.06f : 0.075f;
-            baseEndWidth = wash ? 0.92f : beamStyle ? 0.095f : gobo ? 0.22f : 0.24f;
+            baseStartWidth = wash ? 0.38f : beamStyle ? 0.055f : gobo ? 0.1f : 0.14f;
+            baseEndWidth = wash ? 3.4f : beamStyle ? 0.32f : gobo ? 0.9f : 1.5f;
             beam.startWidth = baseStartWidth;
             beam.endWidth = baseEndWidth;
             beam.sharedMaterial = GameMaterials.BackgroundSprite();
-            beam.startColor = new Color(color.r, color.g, color.b, wash ? 0.045f : beamStyle ? 0.17f : gobo ? 0.1f : 0.12f);
-            beam.endColor = new Color(color.r, color.g, color.b, 0.008f);
+            UpdateBeamColor(0f);
             beam.enabled = true;
         }
 
@@ -75,19 +82,15 @@ namespace TikTokLiveGame
             bool gobo = style == MovingHeadStyle.GoboDots || style == MovingHeadStyle.GoboStar;
             float speed = wash ? 0.29f : beamStyle ? 0.71f : gobo ? 0.41f : 0.58f;
             Vector3 target = new(
-                Mathf.Sin(time * speed + phase) * (wash ? 4.4f : 5.2f),
-                0.08f,
-                Mathf.Lerp(-3.5f, 4.2f, Mathf.Sin(time * (speed * 0.81f) + phase * 1.23f) * 0.5f + 0.5f)
+                coverageCenter.x + Mathf.Sin(time * speed + phase) * coverageSize.x,
+                0.08f + coverageCenter.y,
+                coverageCenter.z + 0.65f + Mathf.Sin(time * (speed * 0.81f) + phase * 1.23f) * coverageSize.y
             );
 
-            if (wash)
-            {
-                beam.startColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.055f);
-                beam.endColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0.008f);
-            }
+            UpdateBeamColor(beatPulse);
             spot.color = baseColor;
-            float baseIntensity = wash ? 0.62f : beamStyle ? 2.7f : gobo ? 2.15f : 1.9f;
-            float pulseIntensity = wash ? 0.42f : beamStyle ? 1.35f : gobo ? 1.05f : 0.9f;
+            float baseIntensity = wash ? 2.6f : beamStyle ? 5.2f : gobo ? 4.5f : 4.2f;
+            float pulseIntensity = wash ? 1.2f : beamStyle ? 2.4f : gobo ? 2f : 1.8f;
             spot.intensity = baseIntensity + beatPulse * pulseIntensity;
             transform.position = origin;
             transform.LookAt(target);
@@ -96,6 +99,14 @@ namespace TikTokLiveGame
             beam.endWidth = baseEndWidth * (0.82f + beatPulse * 0.45f);
             beam.SetPosition(0, origin);
             beam.SetPosition(1, target);
+        }
+
+        private void UpdateBeamColor(float beatPulse)
+        {
+            float opacity = style == MovingHeadStyle.Wash ? 0.3f : style == MovingHeadStyle.Beam ? 0.6f : 0.42f;
+            opacity *= 0.85f + beatPulse * 0.3f;
+            beam.startColor = new Color(baseColor.r, baseColor.g, baseColor.b, opacity);
+            beam.endColor = new Color(baseColor.r, baseColor.g, baseColor.b, opacity * 0.35f);
         }
 
         private static Texture2D CookieForStyle(MovingHeadStyle fixtureStyle)

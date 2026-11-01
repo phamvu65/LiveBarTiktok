@@ -22,8 +22,18 @@ UnityProject/Builds/
 UnityProject/CommercialBuild/
 UnityProject/Assets/AssetStoreTools/
 
+# Generated files from accidentally opening the workspace root in Unity
+/Library/
+/Logs/
+/Temp/
+/UserSettings/
+/Packages/
+/ProjectSettings/
+/*.slnx
+
 # ── Compiled Build output ────────────────────
 Build/
+.build-preview/
 
 # ── Build logs ───────────────────────────────
 build_log.txt

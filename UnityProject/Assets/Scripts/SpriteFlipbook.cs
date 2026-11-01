@@ -11,6 +11,7 @@ namespace TikTokLiveGame
         private float playbackSpeed = 1f;
         private float clock;
         private int frameIndex;
+        public bool FaceCamera { get; set; }
 
         private void Awake() => target = GetComponent<SpriteRenderer>();
 
@@ -30,6 +31,7 @@ namespace TikTokLiveGame
 
         private void Update()
         {
+            if (FaceCamera && Camera.main != null) transform.rotation = Camera.main.transform.rotation;
             if (frames.Length < 2) return;
             clock += Time.deltaTime * playbackSpeed;
             float frameDuration = 1f / framesPerSecond;

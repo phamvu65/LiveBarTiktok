@@ -23,7 +23,7 @@ namespace TikTokLiveGame
             return (name, Load(name));
         }
 
-        private static Sprite[] Load(string name)
+        internal static Sprite[] Load(string name)
         {
             if (Cache.TryGetValue(name, out Sprite[] cached)) return cached;
             Sprite[] frames = Resources.LoadAll<Sprite>($"Characters/{name}")

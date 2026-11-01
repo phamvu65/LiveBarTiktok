@@ -33,7 +33,11 @@ namespace TikTokLiveGame
             // CreateArchitecturalBackdrop(); // Hide acoustic wall and panels
 
             Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-            string path = @"D:\TIKTOK_LIVE_BAR\LiveAssets\nenamphu.png";
+            string[] backdropImages = DjVideoScreen.FindImagePaths();
+            string projectDirectory = System.IO.Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+            string path = backdropImages.Length > 0
+                ? backdropImages[0]
+                : System.IO.Path.GetFullPath(System.IO.Path.Combine(projectDirectory, "..", "LiveAssets", "nenamphu.png"));
             if (System.IO.File.Exists(path))
             {
                 tex.LoadImage(System.IO.File.ReadAllBytes(path));
@@ -41,8 +45,9 @@ namespace TikTokLiveGame
                 tex.anisoLevel = 8;
                 tex.wrapMode = TextureWrapMode.Mirror;
                 tex.Apply();
+                Debug.Log($"Stage backdrop loaded: {path}");
             }
-            Shader bgShader = Shader.Find("Unlit/Texture");
+            Shader bgShader = Resources.Load<Shader>("Shaders/ClubBackdrop");
             if (bgShader == null) bgShader = Shader.Find("Sprites/Default");
             Material bgMat = new Material(bgShader);
             bgMat.mainTexture = tex;
@@ -82,7 +87,7 @@ namespace TikTokLiveGame
             leftQuad.transform.SetParent(bgRoot.transform);
             leftQuad.transform.localPosition = new Vector3(W / 2f, -3.0f, -12.5f + D / 2f);
             leftQuad.transform.localScale = new Vector3(D, H, 1);
-            leftQuad.transform.localRotation = Quaternion.Euler(0, -90, 0);
+            leftQuad.transform.localRotation = Quaternion.Euler(0, 90, 0);
             leftQuad.GetComponent<Renderer>().sharedMaterial = leftMat;
 
             GameObject rightQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -90,7 +95,7 @@ namespace TikTokLiveGame
             rightQuad.transform.SetParent(bgRoot.transform);
             rightQuad.transform.localPosition = new Vector3(-W / 2f, -3.0f, -12.5f + D / 2f);
             rightQuad.transform.localScale = new Vector3(D, H, 1);
-            rightQuad.transform.localRotation = Quaternion.Euler(0, 90, 0);
+            rightQuad.transform.localRotation = Quaternion.Euler(0, -90, 0);
             rightQuad.GetComponent<Renderer>().sharedMaterial = rightMat;
             
             // Trần nhà phản chiếu (Mirrored Ceiling) để chống hở mảng đen khi camera ngước lên quá cao
@@ -99,7 +104,7 @@ namespace TikTokLiveGame
             ceilingQuad.transform.SetParent(bgRoot.transform);
             ceilingQuad.transform.localPosition = new Vector3(0, -3.0f + H / 2f, -12.5f + D / 2f);
             ceilingQuad.transform.localScale = new Vector3(W, D, 1);
-            ceilingQuad.transform.localRotation = Quaternion.Euler(90, 180, 0); // Xoay 180 để mặt Quad hướng xuống dưới đất
+            ceilingQuad.transform.localRotation = Quaternion.Euler(-90, 180, 0); // Face the ceiling toward the inside of the room.
             ceilingQuad.GetComponent<Renderer>().sharedMaterial = ceilingMat;
 
             GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -109,9 +114,7 @@ namespace TikTokLiveGame
             floor.GetComponent<Renderer>().enabled = false;
 
             CreateRaisedStage();
-            // CreateDjVideoScreen();
-            CreateDjBooth();
-            CreateDjPerformer();
+            CreateDjVideoScreen();
             // CreateArchitecturalAccentLights();
             CreateCircularTrussRig();
             // CreateLedBarRig();
@@ -128,12 +131,17 @@ namespace TikTokLiveGame
             GameObject clubRoot = new GameObject("ClubRoot");
             foreach (GameObject go in Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
             {
-                if (go.transform.parent == null && go.name != "Invisible Dance Floor" && !go.name.Contains("AmPhuBackdrop") && go.name != "Main Camera" && go != clubRoot)
+                if (go.transform.parent == null && go.name != "Invisible Dance Floor" &&
+                    go.name != "Center DJ Booth" && !go.name.Contains("AmPhuBackdrop") &&
+                    go.name != "Main Camera" && go != clubRoot)
                 {
                     go.transform.SetParent(clubRoot.transform);
                 }
             }
             clubRoot.transform.position = new Vector3(0, 0, -12f);
+
+            // Build the DJ area last so no room regrouping can move it behind the backdrop.
+            CreateCenteredDjArea();
 
             new GameObject("Club Beat").AddComponent<ClubPulseController>();
 
@@ -187,16 +195,46 @@ namespace TikTokLiveGame
             CreateLitBox("Backdrop Right Column", new Vector3(7.05f, 4.6f, -9.96f), new Vector3(0.22f, 7.55f, 0.22f), metal);
         }
 
+        private static void CreateCenteredDjArea()
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            var existing = new System.Collections.Generic.HashSet<GameObject>(scene.GetRootGameObjects());
+            CreateDjBooth();
+            CreateDjPerformer();
+            GameObject[] created = scene.GetRootGameObjects();
+            Transform djArea = new GameObject("Center DJ Booth").transform;
+            foreach (GameObject item in created)
+                if (!existing.Contains(item)) item.transform.SetParent(djArea, true);
+            // Bring the full console, performer and key lights forward together.
+            // Keep the booth behind the rear edge of the audience slots.
+            djArea.position = new Vector3(0f, -1.1f, 3f);
+            djArea.gameObject.AddComponent<DjBoothLighting>();
+            Debug.Log($"DJ booth created at {djArea.position}, with {djArea.childCount} parts.");
+        }
+
         private static void CreateDjBooth()
         {
-            Material chassis = GameMaterials.Lit(new Color(0.028f, 0.01f, 0.01f), 0.72f, 0.5f, new Color(0.007f, 0.002f, 0.002f));
-            Material glass = GameMaterials.Lit(new Color(0.035f, 0.01f, 0.02f), 0.25f, 0.78f, new Color(0.035f, 0.006f, 0.018f));
+            Material chassis = GameMaterials.Lit(new Color(0.12f, 0.14f, 0.2f), 0.45f, 0.5f, new Color(0.045f, 0.06f, 0.1f));
+            Material glass = GameMaterials.Club(new Color(0.015f, 0.12f, 0.2f), new Color(0.02f, 0.24f, 0.38f));
             CreateLitBox("DJ Booth Core", new Vector3(0f, 1.2f + DjBoothHeightOffset, -7.65f), new Vector3(6.5f, 1.35f, 1.25f), chassis);
             CreateLitBox("DJ Booth Inset", new Vector3(0f, 1.18f + DjBoothHeightOffset, -6.99f), new Vector3(5.55f, 0.76f, 0.055f), glass);
             CreateLitBox("DJ Booth Top Cap", new Vector3(0f, 1.92f + DjBoothHeightOffset, -7.55f), new Vector3(6.72f, 0.13f, 1.42f), chassis);
 
-            Color cyan = new(1f, 0.1f, 0.1f);
-            Color violet = new(0.6f, 0f, 0.2f);
+            GameObject sign = new("DJ Booth Sign");
+            sign.transform.position = new Vector3(0f, 1.18f + DjBoothHeightOffset, -6.94f);
+            sign.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            TextMesh label = sign.AddComponent<TextMesh>();
+            label.text = "DJ LIVE";
+            label.anchor = TextAnchor.MiddleCenter;
+            label.alignment = TextAlignment.Center;
+            label.characterSize = 0.16f;
+            label.fontSize = 64;
+            label.color = Color.cyan;
+            label.richText = false;
+            sign.AddComponent<DjBirthdayDisplay>();
+
+            Color cyan = new(0.02f, 0.85f, 1f);
+            Color violet = new(0.65f, 0.08f, 1f);
             CreateBox("DJ Booth Cyan Rail", new Vector3(0f, 1.87f + DjBoothHeightOffset, -6.95f), new Vector3(6.12f, 0.035f, 0.035f), cyan * 0.06f, cyan * 0.52f);
             CreateBox("DJ Booth Violet Rail", new Vector3(0f, 0.54f + DjBoothHeightOffset, -6.95f), new Vector3(5.62f, 0.028f, 0.03f), violet * 0.05f, violet * 0.38f);
 
@@ -223,31 +261,24 @@ namespace TikTokLiveGame
 
         private static void CreateDjPerformer()
         {
-            // Thay thế DJ 3D bằng Nhân vật chính từ GIF (đã trích xuất thành mảng PNG)
-            GameObject performer = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            performer.name = "Main Character GIF";
-            
-            // Xóa Collider
-            Object.Destroy(performer.GetComponent<Collider>());
-            
-            // Đặt vị trí ngay giữa sân khấu DJ
-            performer.transform.position = new Vector3(0f, 3.4f, -7.5f); // Đặt lên sàn DJ
-            performer.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
-            performer.transform.localScale = new Vector3(4.5f, 4.5f, 1f); // Kích thước của nhân vật GIF
-            
-            // Thêm Script GifPlayer để tự động phát
-            GifPlayer gifPlayer = performer.AddComponent<GifPlayer>();
-            
-            string frameDir = System.IO.Path.Combine(Application.dataPath, "../../LiveAssets/DJ_GIF");
-            if (!System.IO.Directory.Exists(frameDir))
-                frameDir = System.IO.Path.Combine(System.IO.Directory.GetCurrentDirectory(), "LiveAssets/DJ_GIF");
-            
-            gifPlayer.FrameDirectory = frameDir;
-            gifPlayer.FrameRate = 30f; // Tốc độ khung hình mượt mà
-
-            // Ánh sáng chiếu vào nhân vật
-            AddDjKeyLight("DJ Warm Key", new Vector3(-2.2f, 4.25f, -5.8f), new Color(1f, 0.55f, 0.38f), 3.2f);
-            AddDjKeyLight("DJ Cool Rim", new Vector3(2.4f, 4.55f, -8.7f), new Color(0.22f, 0.55f, 1f), 2.7f);
+            Sprite[] frames = CharacterLibrary.Load("b");
+            if (frames.Length == 0)
+            {
+                Debug.LogWarning("Resident DJ sprite frames were not found in Characters/b.");
+                return;
+            }
+            GameObject performer = new("Resident Cartoon DJ");
+            performer.transform.position = new Vector3(0f, 3.75f, -8f);
+            SpriteRenderer renderer = performer.AddComponent<SpriteRenderer>();
+            // Respect the console's depth so the DJ stands behind the desk.
+            renderer.sharedMaterial = GameMaterials.BackgroundSprite();
+            float height = 0f;
+            foreach (Sprite frame in frames) height = Mathf.Max(height, frame.bounds.size.y);
+            performer.transform.localScale = Vector3.one * (2.6f / Mathf.Max(0.01f, height));
+            SpriteFlipbook flipbook = performer.AddComponent<SpriteFlipbook>();
+            flipbook.SetFrames(frames, 12f);
+            flipbook.FaceCamera = true;
+            Debug.Log($"Resident cartoon DJ: {frames.Length} dance frames.");
         }
 
         private static void AddDjKeyLight(string name, Vector3 position, Color color, float intensity)
@@ -281,7 +312,6 @@ namespace TikTokLiveGame
                 l.cullingMask = -1; 
                 DiscoLight disco = obj.AddComponent<DiscoLight>();
                 disco.index = i;
-                discoLights.Add(disco);
             }
         }
 
@@ -494,9 +524,10 @@ namespace TikTokLiveGame
                 new(1f, 0.5f, 0.06f),
                 new(0.08f, 1f, 0.52f)
             };
-            for (int index = 0; index < 12; index++)
+            const int ringLightCount = 24;
+            for (int index = 0; index < ringLightCount; index++)
             {
-                float angle = index * Mathf.PI * 2f / 12f;
+                float angle = index * Mathf.PI * 2f / ringLightCount;
                 Vector3 origin = RingPoint(3.52f, angle, -0.34f);
                 MovingHeadStyle style = (index % 4) switch
                 {
@@ -509,13 +540,27 @@ namespace TikTokLiveGame
                 CreateMovingHead($"Moving Head Ring {index}", origin, beamColors[index % beamColors.Length], index * 0.82f, style, castsFloorLight);
             }
 
-            for (int index = 0; index < 8; index++)
+            const int floorEffectCount = 16;
+            for (int index = 0; index < floorEffectCount; index++)
             {
-                float angle = index * Mathf.PI * 2f / 8f + Mathf.PI / 8f;
+                float angle = index * Mathf.PI * 2f / floorEffectCount + Mathf.PI / floorEffectCount;
                 Vector3 origin = RingPoint(3.2f, angle, -0.47f);
                 MovingHeadStyle style = index % 2 == 0 ? MovingHeadStyle.GoboDots : MovingHeadStyle.Beam;
                 Color color = beamColors[(index + 1) % beamColors.Length];
                 CreateMovingHead($"Moving Head Floor FX {index}", origin, color, index * 1.16f + 0.4f, style, false);
+            }
+
+            // Give each side and corner its own wash instead of aiming every
+            // fixture at the same central patch of floor.
+            for (int side = -1; side <= 1; side += 2)
+            for (int row = 0; row < 4; row++)
+            {
+                float z = Mathf.Lerp(-7f, 6f, row / 3f);
+                string name = $"Corner Wash {side} {row}";
+                Vector3 origin = new(side * 7.8f, 6.8f, z);
+                CreateMovingHead(name, origin, beamColors[(row + (side > 0 ? 2 : 0)) % beamColors.Length],
+                    row * 1.4f + side * 0.7f, MovingHeadStyle.Wash, true)
+                    .SetCoverage(new Vector3(side * 4.5f, 0f, z - 0.65f), new Vector2(2.5f, 2.8f));
             }
         }
 
@@ -535,7 +580,7 @@ namespace TikTokLiveGame
             bar.GetComponent<Renderer>().sharedMaterial = material;
         }
 
-        private static void CreateMovingHead(string name, Vector3 origin, Color color, float phase, MovingHeadStyle style, bool castsLight)
+        private static MovingHeadFixture CreateMovingHead(string name, Vector3 origin, Color color, float phase, MovingHeadStyle style, bool castsLight)
         {
             GameObject fixture = new(name);
             fixture.transform.position = origin;
@@ -552,6 +597,7 @@ namespace TikTokLiveGame
             MovingHeadFixture head = fixture.AddComponent<MovingHeadFixture>();
             head.Initialize(origin, color, phase, style, castsLight);
             if (castsLight) head.GetComponent<Light>().cullingMask = -1;
+            return head;
         }
 
         private static void CreateFixturePart(string name, Transform parent, PrimitiveType type, Vector3 localPosition, Vector3 localScale, Material material, Vector3 localEuler = default)
@@ -782,3 +828,4 @@ namespace TikTokLiveGame
         }
     }
 }
+

@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace TikTokLiveBar
+namespace TikTokLiveGame
 {
     public sealed class GifPlayer : MonoBehaviour
     {
@@ -95,3 +95,4 @@ namespace TikTokLiveBar
         }
     }
 }
+

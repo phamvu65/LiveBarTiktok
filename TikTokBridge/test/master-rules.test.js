@@ -1,5 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+test('birthday gift rule preserves donor identity and birthday action', () => {
+    const { sanitizeMasterConfig, resolveMasterRule, applyRule } = require('../src/master/rules');
+    const config = sanitizeMasterConfig({ rules: [{ id: 'birthday', source: 'gift', giftId: 'cake-id', action: 'birthday' }] });
+    const event = { type: 'gift', giftId: 'cake-id', uniqueId: 'birthday_donor', nickname: 'Donor' };
+    const result = applyRule(event, resolveMasterRule(config, event));
+    assert.equal(result.action, 'birthday');
+    assert.equal(result.uniqueId, 'birthday_donor');
+    assert.equal(resolveMasterRule(config, { ...event, giftId: 'other' }), null);
+});
 const { sanitizeMasterConfig, resolveMasterRule, applyRule, applyBuiltInChatCommand } = require('../src/master/rules');
 
 const master = sanitizeMasterConfig({
