@@ -34,6 +34,7 @@ UnityProject/Assets/AssetStoreTools/
 # ── Compiled Build output ────────────────────
 Build/
 .build-preview/
+.release-assets/
 
 # ── Build logs ───────────────────────────────
 build_log.txt

@@ -44,7 +44,10 @@
 
 ### Cách nhanh nhất trên Windows
 
-1. Tải [`OngChuMMO-Live-Windows-v1.0.5.zip`](https://github.com/cherry9001/tiktok-live-bar/releases/latest/download/OngChuMMO-Live-Windows-v1.0.5.zip) trong mục **Releases**.
+Bản của repo này: **v1.1.0 — DJ B, quầy DJ, LED và lời chúc sinh nhật**.
+Xem [Releases của LiveBarTiktok](https://github.com/phamvu65/LiveBarTiktok/releases).
+
+1. Tải [`LiveBarTiktok-Windows-v1.1.0.zip`](https://github.com/phamvu65/LiveBarTiktok/releases/download/v1.1.0/LiveBarTiktok-Windows-v1.1.0.zip) trong mục **Releases**.
 2. Giải nén toàn bộ ZIP ra một thư mục mới. Không chạy trực tiếp bên trong ZIP.
 3. Cài [Node.js 20 LTS trở lên](https://nodejs.org/) nếu máy chưa có.
 4. Nhấp đúp `run.bat`. Launcher tự cài thư viện, mở Bridge, Game và Control Panel.
@@ -55,11 +58,13 @@ Sau khi chạy `run.bat` lần đầu:
 
 - Cửa sổ **TikTok Bridge** hiển thị địa chỉ `http://127.0.0.1:3000`.
 - Trình duyệt mở Control Panel và logo ÔNG CHÚ MMO hiển thị bình thường.
-- Game mở với cửa sổ `TikTokLiveGameUnity` và báo kết nối Node thành công.
-- Gói Windows đã kèm `Build/DJ_MUSIC/nhacnen.MP3`; có thể thay bằng MP3/WAV/OGG của bạn.
+- Game mở với cửa sổ `OngChuMMO_Live`; DJ B nhảy sau quầy và đèn LED chạy theo nhịp.
+- Gói không kèm nhạc. Chép MP3/WAV/OGG vào `DJ_MUSIC` cạnh `run.bat`, rồi khởi động lại game.
+- Ảnh nền có sẵn trong `DJ_VIDEO`; có thể thay bằng ảnh hoặc video của bạn.
 
-Luồng trên đã được kiểm thử trọn vẹn từ ZIP sạch trên Windows 11: launcher tự
-chạy `npm ci`, Bridge/Control Panel/WebSocket hoạt động và game kết nối cổng 3000.
+Bản v1.1.0 được build bằng Unity 6000.2.10f1. Lần chạy đầu cần Internet để launcher
+cài thư viện bằng `npm ci`. Có thể thử game qua **Test Lab → Demo** mà không cần live thật.
+Không cần cài Unity để chạy gói Windows.
 
 > `run.bat` không tự tắt chương trình khác đang dùng cổng 3000. Nếu launcher báo
 > xung đột cổng, hãy đóng đúng chương trình được báo rồi chạy lại để tránh mất dữ liệu.
@@ -70,8 +75,8 @@ chạy `npm ci`, Bridge/Control Panel/WebSocket hoạt động và game kết n�
 ### Dành cho lập trình viên — Clone source
 
 ```bash
-git clone https://github.com/cherry9001/tiktok-live-bar.git
-cd tiktok-live-bar
+git clone https://github.com/phamvu65/LiveBarTiktok.git
+cd LiveBarTiktok
 ```
 
 Source GitHub không chứa game đã biên dịch. Cài Unity `6000.2.10f1`, sau đó chạy
